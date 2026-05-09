@@ -8,8 +8,48 @@
 
 ## 설치
 
+### 사전 요구사항
+
+- [Claude Code](https://claude.ai/code) CLI 설치
+- Python 3 (맞춤법 검사 에이전트에 필요)
+- macOS / Linux / WSL
+
+### 방법 1 — git clone (권장)
+
 ```bash
-claude skills install BHyeonKim/javascriptinfo-ko-translation-validator
+# 1. 스킬 디렉터리로 이동 (없으면 생성)
+mkdir -p ~/.claude/skills
+cd ~/.claude/skills
+
+# 2. 저장소 클론
+git clone https://github.com/BHyeonKim/javascriptinfo-ko-translation-validator translation-validator
+```
+
+### 방법 2 — 수동 복사
+
+저장소를 ZIP으로 다운로드한 뒤 압축을 풀고, 폴더 이름을 `translation-validator`로 변경해 `~/.claude/skills/`에 넣습니다.
+
+```
+~/.claude/skills/
+└── translation-validator/
+    ├── SKILL.md
+    ├── references/
+    └── scripts/
+```
+
+### 설치 확인
+
+Claude Code를 재시작한 뒤 아래 명령으로 스킬 목록에 `translation-validator`가 표시되는지 확인합니다.
+
+```
+/skills
+```
+
+### 업데이트
+
+```bash
+cd ~/.claude/skills/translation-validator
+git pull
 ```
 
 ---
