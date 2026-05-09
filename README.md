@@ -12,6 +12,7 @@
 
 - [Claude Code](https://claude.ai/code) CLI 설치
 - Python 3 (맞춤법 검사 에이전트에 필요)
+- Node.js + [hanspell](https://www.npmjs.com/package/hanspell) (`npm install -g hanspell`)
 - macOS / Linux / WSL
 
 ### 방법 1 — git clone (권장)
@@ -129,11 +130,16 @@ ko.javascript.info 프로젝트 자체 규칙
 
 ### Agent 4 — 맞춤법 검사
 
-Python 스크립트(`scripts/check_spelling.py`)로 [국립국어원 맞춤법 검사기](https://speller.cs.pusan.ac.kr/) API를 호출합니다.
+[hanspell](https://www.npmjs.com/package/hanspell) 라이브러리를 사용하는 Python 스크립트(`scripts/check_spelling.py`)로 맞춤법을 검사합니다.
 
 - 띄어쓰기 오류
 - 맞춤법 오류
 - 표준어 교정
+
+> **사전 요구사항**: `hanspell` npm 패키지가 설치되어 있어야 합니다.
+> ```bash
+> npm install -g hanspell
+> ```
 
 > 코드 블록(` ``` `), 인라인 코드(`` ` ``) 내부는 모든 에이전트 검사에서 제외됩니다.
 
