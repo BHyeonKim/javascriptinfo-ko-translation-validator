@@ -1,0 +1,14 @@
+{
+  "spreadsheet_id": "1fYaEI8vz26N3R2VaxrlNnk9fMQ8zIy4RpvjRp4jZd0Q",
+  "last_fetched": "2026-05-13T16:49:27+09:00",
+  "sheets": {
+    "sheet1": {
+      "gid": "1401860741",
+      "sha256": "d2cbd5e9a0a68dd21480895dd436cb8fa169f8e89db0e6c53e9979eeb1aa6078"
+    },
+    "sheet2": {
+      "gid": "843106813",
+      "sha256": "9f3d35bd58c21fc58f32e2f9d623b23ebb7bdee0429c9b9887a9fc4de6da0282"
+    }
+  }
+}

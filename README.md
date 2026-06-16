@@ -2,7 +2,7 @@
 
 [모던 JavaScript 튜토리얼](https://javascript.info/) 한국어 번역 프로젝트 [ko.javascript.info](https://github.com/javascript-tutorial/ko.javascript.info)의 번역 품질을 검증하는 Claude Code 스킬입니다.
 
-번역 파일(`.md`)을 지정하면 4개의 에이전트가 병렬로 규칙을 검사하고, 마크다운 보고서와 JSON 파일을 생성합니다.
+번역 파일(`.md`)을 지정하면 5개의 에이전트가 병렬로 규칙을 검사하고, 마크다운 보고서와 JSON 파일을 생성합니다.
 
 ---
 
@@ -71,7 +71,7 @@ git pull
 
 ## 에이전트 구성
 
-4개의 에이전트가 동시에 실행됩니다.
+5개의 에이전트가 동시에 실행됩니다.
 
 ### Agent 1 — WIKI 규칙 검사
 
@@ -143,6 +143,20 @@ ko.javascript.info 프로젝트 자체 규칙
 
 > 코드 블록(` ``` `), 인라인 코드(`` ` ``) 내부는 모든 에이전트 검사에서 제외됩니다.
 
+### Agent 5 — 용어집 일관성 검사
+
+ko.javascript.info 한국어 번역 팀의 공식 용어집(Google Sheets)을 기준으로
+`한국어(영어)` 병기 패턴이 표준 번역어와 일치하는지 검사합니다.
+
+| 규칙 ID | 내용 |
+|---------|------|
+| GLOSSARY-mismatch | 본문 `한국어(영어)` 표기가 용어집의 표준 한국어 표기와 다를 때 권고 |
+
+- 데이터 소스: 시트1(일반 기술 용어), 시트2(기호/구두점) — `glossary/` 디렉터리에 캐시
+- 매 실행 시 원본 시트의 sha256 해시를 비교해 변경된 경우에만 캐시 갱신
+- 네트워크 실패 시 기존 캐시로 계속 동작 (경고 메시지만 보고)
+- 자동 수정 대상 아님 (문맥상 표준과 다르게 쓰는 게 맞을 수 있으므로 권고만)
+
 ---
 
 ## 결과 예시
@@ -161,6 +175,7 @@ ko.javascript.info 프로젝트 자체 규칙
 | 22  | KIGO-경어     | 🟡 권고  | `알아두시기 바랍니다` — 이중 높임 표현    | `알아두기 바랍니다`      |
 | 49  | WIKI-2       | 🟡 권고  | `주의하셔야 합니다` — 과도한 `-시-`      | `주의해야 합니다`        |
 | 81  | CUSTOM-병기   | 🟡 권고  | `클래스`와 `모듈` 첫 등장 시 병기 누락   | `클래스(class)`, `모듈(module)` |
+| 95  | GLOSSARY-mismatch | 🟡 권고  | `다른표기(single-quoted)` — 표준 번역어 불일치 | `작은따옴표(single-quoted)` |
 
 ### 통과 항목
 - WIKI: 헤딩 콜론 없음, 인칭대명사 삽입 없음, ...
@@ -247,6 +262,7 @@ article.md → article_validation.json
 
 > 코드 블록(` ``` `) 내부는 자동 수정에서 제외됩니다.
 > 문장 전체 재작성이 필요한 항목은 제안만 표시하고 직접 수정을 안내합니다.
+> GLOSSARY-mismatch는 권고(B)를 선택해도 자동 적용되지 않고 수동 검토 표에만 노출됩니다.
 
 ---
 
@@ -268,9 +284,16 @@ article.md → article_validation.json
 ├── references/
 │   ├── wiki-guidelines.md        # WIKI-1~17 규칙
 │   ├── kigo-guidelines.md        # KIGO 스타일 가이드
-│   └── custom-rules.md           # 프로젝트 커스텀 규칙
+│   ├── custom-rules.md           # 프로젝트 커스텀 규칙
+│   └── glossary-guidelines.md    # 용어집 기반 검사 규칙
+├── glossary/
+│   ├── sheet1.csv                # 일반 기술 용어 캐시
+│   ├── sheet2.csv                # 기호/구두점 표기 캐시
+│   └── meta.json                 # 캐시 해시·갱신 시각
 └── scripts/
-    └── check_spelling.py         # 맞춤법 검사 스크립트
+    ├── _text_utils.py            # 마크다운 전처리 공유 모듈
+    ├── check_spelling.py         # 맞춤법 검사 스크립트
+    └── check_glossary.py         # 용어집 일관성 검사 스크립트
 ```
 
 ---

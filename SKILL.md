@@ -5,8 +5,9 @@ description: >
   프로젝트 번역 모범 사례를 준수하는지 검토할 때 사용. 다음 요청 시 트리거:
   "번역 검토해줘", "번역 확인해줘", "번역 검증해줘", "번역 피드백", "번역 규칙
   맞는지 봐줘", "translation validate", PR 리뷰 시 .md 번역 파일 포함된 경우.
-  세 가지 규칙 소스를 병렬 에이전트로 동시 검토: (1) ko.javascript.info 위키
-  번역 모범 사례, (2) KIGO 번역 스타일 가이드, (3) 프로젝트 커스텀 규칙.
+  네 가지 규칙 소스를 병렬 에이전트로 동시 검토: (1) ko.javascript.info 위키
+  번역 모범 사례, (2) KIGO 번역 스타일 가이드, (3) 프로젝트 커스텀 규칙,
+  (4) ko.javascript.info 공식 용어집(Google Sheets).
 ---
 
 # ko.javascript.info 번역 검증
@@ -15,18 +16,20 @@ description: >
 
 ### 1단계 — 파일 준비 및 스크립트 경로 확인
 
-검토할 번역 파일을 읽고, 다음 명령으로 맞춤법 검사 스크립트의 절대 경로를 확인한다:
+검토할 번역 파일을 읽고, 다음 명령으로 검증 스크립트들의 절대 경로를 확인한다:
 
 ```bash
 find "$HOME/.claude" "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude" \
   -name "check_spelling.py" -path "*/translation-validator/*" 2>/dev/null | head -1
+find "$HOME/.claude" "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude" \
+  -name "check_glossary.py" -path "*/translation-validator/*" 2>/dev/null | head -1
 ```
 
-결과를 `SPELL_SCRIPT`로 기억한다. 경로를 찾지 못하면 에이전트 4를 건너뛴다.
+결과를 각각 `SPELL_SCRIPT`, `GLOSSARY_SCRIPT`로 기억한다. 경로를 찾지 못하면 해당 에이전트를 건너뛴다.
 
 ### 2단계 — 병렬 에이전트 실행
 
-네 검증 작업이 서로 독립적이므로 Agent 도구로 **동시에 4개 에이전트를 하나의 메시지에** 실행한다.
+다섯 검증 작업이 서로 독립적이므로 Agent 도구로 **동시에 5개 에이전트를 하나의 메시지에** 실행한다.
 각 에이전트에게 전달할 것:
 - 번역 파일 전체 내용 (프롬프트에 직접 포함)
 - 담당 규칙 파일 경로 (각자 Read로 읽게 함)
@@ -75,9 +78,29 @@ find "$HOME/.claude" "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claud
 }
 ```
 
+**에이전트 5 프롬프트 템플릿:**
+```
+references/glossary-guidelines.md 를 Read 도구로 읽어 GLOSSARY-mismatch 규칙을 이해한 뒤,
+다음 명령을 실행하라:
+
+  python3 "<GLOSSARY_SCRIPT 경로>" "<파일 절대경로>"
+
+스크립트가 반환한 JSON 그대로를 아래 형식으로 반환하라 (다른 텍스트 없음):
+{
+  "source": "glossary",
+  "violations": [
+    {"line": 줄번호, "rule_id": "GLOSSARY-mismatch", "problem": "한국어(영어)", "suggestion": "표준한국어(영어)", "severity": "recommended"}
+  ],
+  "passed": ["한국어(영어) — 표준 번역어 일치", ...],
+  "cache": {"last_fetched": "...", "refreshed": bool, "network_warning": null | "..."}
+}
+```
+
 ### 3단계 — 결과 병합 및 보고서 출력
 
-네 에이전트 결과를 합쳐 아래 형식으로 출력한다.
+다섯 에이전트 결과를 합쳐 아래 형식으로 출력한다. GLOSSARY 에이전트의 `cache` 필드는
+보고서 푸터에 한 줄로 표기한다 (예: `용어집 캐시: 최신 (마지막 갱신 2026-05-13T16:43:29+09:00)`).
+`network_warning`이 있으면 ⚠️ 아이콘과 함께 함께 노출한다.
 
 ### 4단계 — JSON 결과 저장 및 경로 출력
 
@@ -113,7 +136,13 @@ find "$HOME/.claude" "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claud
     "wiki": ["통과 항목 1", "..."],
     "kigo": ["통과 항목 1", "..."],
     "custom": ["통과 항목 1", "..."],
-    "spell": ["통과 항목 1", "..."]
+    "spell": ["통과 항목 1", "..."],
+    "glossary": ["통과 항목 1", "..."]
+  },
+  "glossary_cache": {
+    "last_fetched": "...",
+    "refreshed": false,
+    "network_warning": null
   }
 }
 ```
@@ -150,7 +179,7 @@ JSON 저장 직후 **AskUserQuestion 도구**로 사용자에게 다음 선택�
    |------|-----------|-----------|
    | **자동 적용** | `line` 번호가 있고 `problem`이 원문 텍스트, `suggestion`이 대체 텍스트인 경우 | Edit 도구로 직접 수정 |
    | **반자동 적용** | 문장 전체 재작성이 필요한 경우 (KIGO-시제 등) | `suggestion`을 보여주고 사용자가 직접 수정하도록 안내 |
-   | **건너뜀** | `line`이 없거나 `severity`가 `info`인 경우 | 수정하지 않음 |
+   | **건너뜀** | `line`이 없거나 `severity`가 `info`인 경우, **또는 `rule_id`가 `GLOSSARY-mismatch`인 경우** | 수정하지 않음 (GLOSSARY는 B 선택 시에도 자동 적용하지 않고 수동 검토 표에만 노출) |
 
 3. **자동 적용 가능한 항목을 Edit 도구로 수정한다.**
 
@@ -224,3 +253,4 @@ JSON 저장 직후 **AskUserQuestion 도구**로 사용자에게 다음 선택�
 - 코드 블록(`` ``` ``), 인라인 코드(`` ` ``), 원문 인용 내부는 규칙 적용 제외
 - 마크다운 헤딩은 WIKI-15 적용 (마침표/물음표 금지)
 - CUSTOM-병기는 **해당 파일 내 첫 등장**에만 적용
+- GLOSSARY-mismatch는 `한국어(영어)` 병기 패턴에서만 검사, 자동 수정 대상 아님
