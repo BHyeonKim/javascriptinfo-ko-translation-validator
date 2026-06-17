@@ -10,36 +10,11 @@ Output (stdout): JSON array of spelling violations
 """
 
 import sys
-import re
 import subprocess
 import json
 import os
 
-
-def strip_non_korean_content(content: str) -> str:
-    """Remove regions that should not be spell-checked."""
-    # Fenced code blocks
-    content = re.sub(r'```[\s\S]*?```', '\n', content)
-    # Inline code
-    content = re.sub(r'`[^`\n]+`', ' ', content)
-    # URLs
-    content = re.sub(r'https?://\S+', ' ', content)
-    # Markdown images
-    content = re.sub(r'!\[[^\]]*\]\([^\)]+\)', ' ', content)
-    # Markdown links → keep link text only
-    content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
-    # HTML tags
-    content = re.sub(r'<[^>]+>', ' ', content)
-    # Heading markers
-    content = re.sub(r'^#{1,6}\s+', '', content, flags=re.MULTILINE)
-    # Bold/italic markers
-    content = re.sub(r'\*{1,3}', '', content)
-    content = re.sub(r'(?<!\w)_([^_\n]+)_(?!\w)', r'\1', content)
-    # YAML frontmatter
-    content = re.sub(r'^---[\s\S]*?---\n', '', content)
-    # Smart quotes and special chars that confuse hanspell
-    content = content.replace('“', '"').replace('”', '"')
-    return content
+from _text_utils import strip_non_korean_content
 
 
 def parse_hanspell_output(output: str) -> list[dict]:
